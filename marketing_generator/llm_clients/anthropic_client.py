@@ -1,7 +1,5 @@
-from platform import system
-
 from marketing_generator.config import CLAUDE_MODEL
-from marketing_generator.prompts import system_prompt_student, system_prompt_links, system_prompt_brochure
+from marketing_generator.prompts import get_system_prompt_brochure, get_system_prompt_student
 from anthropic import Anthropic
 import json
 from IPython.display import Markdown, update_display, display
@@ -28,23 +26,25 @@ def get_links_claude(system_prompt, user_message):
         raise e
 
 
-def claude_brochure(user_prompt: str) -> str:
+def claude_brochure(user_prompt: str, major: str) -> str:
     client = Anthropic()
+    sp = get_system_prompt_brochure(major)
     claude = client.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=1024,
-        system=system_prompt_brochure,
+        system=sp,
         messages=[{'role':'user', 'content':user_prompt}]
     )
     return claude.content[0].text
 
-def stream_claude_brochure(prompt: str):
+def stream_claude_brochure(prompt: str, major: str):
     client = Anthropic()
+    sp = get_system_prompt_brochure(major)
     claude = client.messages.stream(
         model="claude-3-haiku-20240307",
         max_tokens=1000,
         temperature=0.7,
-        system=system_prompt_brochure,
+        system=sp,
         messages=[
             {"role": "user", "content": prompt},
         ]

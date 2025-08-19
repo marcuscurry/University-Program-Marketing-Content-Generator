@@ -1,17 +1,29 @@
-from .prompts import system_prompt_student
+from .prompts import get_system_prompt_student
 from .llm_clients.ollama_client import judge_brochures
 
 
-def build_student_user_prompt(ut_brochure: str, uc_brochure: str, uw_brochure: str) -> str:
-    return (
-        "Here are the three brochures you will be judging:\n\n"
-        f"1. University of Texas {ut_brochure}\n"
-        f"2. University of Chicago {uc_brochure}\n"
-        f"3. University of Washington {uw_brochure}\n"
-    )
+def build_student_user_prompt(brochure_1: str, brochure_2: str, brochure_3: str, major: str) -> str:
+    user_prompt_student = f"""
+        You are a prospective {major} student comparing three programs based on their marketing materials. 
+        Please **rank the underlying programs** — not the brochure formatting — using factors like:
+        - Curriculum depth
+        - Career opportunities
+        - Alumni network
+        - Global exposure
+        - Uniqueness of the experience
+        
+        Give a ranked list and explain your reasoning.
+        {brochure_1}
+        {brochure_2}
+        {brochure_3}
+        
+        Be sure to rank in Descending order (best to worst) and respond in Markdown.
+        """
+    return user_prompt_student
 
 
-def rank_brochures(ut_brochure: str, uc_brochure: str, uw_brochure: str) -> str:
-    user_prompt_student = build_student_user_prompt(ut_brochure, uc_brochure, uw_brochure)
+
+def rank_brochures(brochure_1: str, brochure_2: str, brochure_3: str, major: str) -> str:
+    user_prompt_student = build_student_user_prompt(brochure_1, brochure_2, brochure_3, major)
     # Note: system_prompt_student is injected inside judge_brochures
-    return judge_brochures(user_prompt_student)
+    return judge_brochures(user_prompt_student, major)

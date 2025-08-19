@@ -37,9 +37,12 @@ def get_program_by_id(program_id):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT university || ' — ' || program_name, url 
-                FROM Institution 
-                WHERE id = %s
+                SELECT i.university || ' — ' || i.program_name AS subject,
+                       i.url,
+                       m.name as major
+                FROM Institution i
+                JOIN Major m ON i.major_id = m.id
+                WHERE i.id = %s;
             """, (program_id,))
             return cur.fetchone()
 

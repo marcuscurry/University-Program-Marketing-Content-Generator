@@ -1,3 +1,5 @@
+from cProfile import label
+
 import gradio as gr
 from marketing_generator.brochure import create_brochure
 from marketing_generator.evaluate import rank_brochures
@@ -6,28 +8,63 @@ from marketing_generator.db import fetch_majors, fetch_programs_by_major, get_pr
 # ------------------------
 # Brochure Generation Logic
 # ------------------------
+
+# For storing brochures generated through the UI
+generated_brochures = {}
+
 def generate_ui_brochure(program_id, api_choice):
-    # get selected program data from db
-    subject, url = get_program_by_id(program_id)
-    brochure = create_brochure(subject, url, api_choice)
-    return brochure, brochure, "✅ Brochure Completed!"
+    subject, url, major = get_program_by_id(program_id)
+    brochure = create_brochure(subject, url, api_choice, major)
+
+    # Cache it
+    generated_brochures[program_id] = {
+        "subject": subject,
+        "brochure": brochure,
+        "major": major
+    }
+
+    return brochure, brochure, f"✅ Brochure Completed for: {subject} ✅"
+
 
 # ------------------------
 # Brochure Ranking Logic
 # ------------------------
-def rank_ui_brochures(uw, ut, uc):
-    return rank_brochures(ut, uc, uw)
+
+def get_cached_brochure_options():
+    return [(data["subject"], pid) for pid, data in generated_brochures.items()]
+
+def refresh_brochure_dropdowns():
+    options = get_cached_brochure_options()
+    return (
+        gr.update(choices=options, value=None),
+        gr.update(choices=options, value=None),
+        gr.update(choices=options, value=None),
+    )
+
+def rank_ui_brochures(pid1, pid2, pid3):
+    try:
+        b1 = generated_brochures[pid1]["brochure"]
+        b2 = generated_brochures[pid2]["brochure"]
+        b3 = generated_brochures[pid3]["brochure"]
+        major = generated_brochures[pid1].get("major", "General")
+        return rank_brochures(b1, b2, b3, major)
+    except KeyError as e:
+        return f"❌ Missing brochure for Program ID: {e}"
+
 
 # ------------------------
 # Dynamic Dropdown Loaders
 # ------------------------
+
 def load_programs_by_major(major_id):
     programs = fetch_programs_by_major(major_id)
     return gr.update(choices=[(name, pid) for pid, name in programs], value=None)
 
+
 # ------------------------
 # UI Construction
 # ------------------------
+
 with gr.Blocks() as demo:
     gr.Markdown("# 🎓 University Program Marketing Generator")
 
@@ -76,7 +113,7 @@ with gr.Blocks() as demo:
         with gr.Tab("📃 Raw Text View"):
             raw_output = gr.Textbox(lines=20, label="Brochure Text")
 
-    generate_button.click(
+    generate_click_event = generate_button.click(
         fn=generate_ui_brochure,
         inputs=[program_dropdown, api_choice],
         outputs=[raw_output, markdown_output, status_label]
@@ -86,20 +123,38 @@ with gr.Blocks() as demo:
     gr.Markdown("## 🧠 Compare & Rank Brochures")
 
     with gr.Row():
-        uw_input = gr.Textbox(label="🏫 UW Brochure", lines=6, placeholder="Paste brochure text here...")
-        ut_input = gr.Textbox(label="🏫 UT Brochure", lines=6, placeholder="Paste brochure text here...")
-        uc_input = gr.Textbox(label="🏫 UChicago Brochure", lines=6, placeholder="Paste brochure text here...")
+        pid1 = gr.Dropdown(label="🏫 Program 1", choices=[], interactive=True)
+        pid2 = gr.Dropdown(label="🏫 Program 2", choices=[], interactive=True)
+        pid3 = gr.Dropdown(label="🏫 Program 3", choices=[], interactive=True)
+
+        criteria = gr.Textbox(label="Important criteria to be taken into account for the programs:", lines=4, interactive=True)
+
+    # Attach the refresh after dropdowns are defined
+    generate_click_event.then(
+        fn=refresh_brochure_dropdowns,
+        inputs=[],
+        outputs=[pid1, pid2, pid3]
+    )
+
+    demo.load(
+        fn=refresh_brochure_dropdowns,
+        inputs=[],
+        outputs=[pid1, pid2, pid3]
+    )
 
     rank_button = gr.Button("📊 Rank Programs")
-    ranking_output = gr.Textbox(label="🏆 Program Ranking Result", lines=4, interactive=False)
+    ranking_output = gr.Markdown(label="🏆 Program Ranking Result")
+    status_label = gr.Label(value="", label="Status")
 
     rank_button.click(
         fn=rank_ui_brochures,
-        inputs=[uw_input, ut_input, uc_input],
-        outputs=ranking_output
+        inputs=[pid1, pid2, pid3],
+        outputs=[ranking_output, status_label]
     )
+
 
 # ------------------------
 # Launch UI
 # ------------------------
+
 demo.launch()

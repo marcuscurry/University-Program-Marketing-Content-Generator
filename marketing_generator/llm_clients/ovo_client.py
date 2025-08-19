@@ -1,6 +1,6 @@
 import json
 from openai import OpenAI
-from marketing_generator.prompts import system_prompt_brochure
+from marketing_generator.prompts import get_system_prompt_brochure
 
 
 def get_links_ollama_via_openai(messages):
@@ -18,12 +18,13 @@ def get_links_ollama_via_openai(messages):
     return json.loads(result)
 
 
-def ovo_brochure(user_prompt: str) -> str:
+def ovo_brochure(user_prompt: str, major: str) -> str:
     ollama_via_openai = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+    sp = get_system_prompt_brochure(major)
     response = ollama_via_openai.chat.completions.create(
         model="llama3.2",
         messages=[
-            {"role": "system", "content": system_prompt_brochure},
+            {"role": "system", "content": sp},
             {"role": "user", "content": user_prompt},
         ],
     )

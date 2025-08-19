@@ -2,7 +2,7 @@ import json
 from openai import OpenAI
 from IPython.display import Markdown, display, update_display  # used by stream helper
 from marketing_generator.config import OPENAI_MODEL  # relative import from package root
-from marketing_generator.prompts import system_prompt_brochure  # stream uses this prompt
+from marketing_generator.prompts import get_system_prompt_brochure  # stream uses this prompt
 
 
 def get_links_openai(messages):
@@ -20,12 +20,13 @@ def get_links_openai(messages):
     return json.loads(result)
 
 
-def openai_brochure(user_prompt: str) -> str:
+def openai_brochure(user_prompt: str, major: str) -> str:
     client = OpenAI()
+    sp = get_system_prompt_brochure(major)
     response = client.chat.completions.create(
         model=OPENAI_MODEL,
         messages=[
-            {"role": "system", "content": system_prompt_brochure},
+            {"role": "system", "content": sp},
             {"role": "user", "content": user_prompt},
         ],
         stream=False,
@@ -33,13 +34,14 @@ def openai_brochure(user_prompt: str) -> str:
     return response.choices[0].message.content
 
 
-def openai_stream_brochure(user_prompt: str):
+def openai_stream_brochure(user_prompt: str, major: str):
     """Streams markdown back via IPython display."""
     client = OpenAI()
+    sp = get_system_prompt_brochure(major)
     stream = client.chat.completions.create(
         model=OPENAI_MODEL,
         messages=[
-            {"role": "system", "content": system_prompt_brochure},
+            {"role": "system", "content": sp},
             {"role": "user", "content": user_prompt},
         ],
         stream=True,
