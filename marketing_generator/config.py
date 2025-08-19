@@ -11,6 +11,7 @@ import ollama  # noqa: F401
 OLLAMA_API = "http://localhost:11434/api/chat"
 OLLAMA_MODEL = "llama3.2"
 OPENAI_MODEL = "gpt-4o-mini"
+CLAUDE_MODEL = "claude-3-5-haiku-latest"
 
 # ==== REQUESTS HEADERS FOR SCRAPING ====
 headers = {
@@ -23,8 +24,16 @@ headers = {
 
 # ==== ENV ====
 dotenv.load_dotenv()
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+anthropic_api_key= os.getenv("ANTHROPIC_API_KEY")
+
 if openai.api_key:
     print("OpenAI API KEY FOUND")
 else:
     print("OpenAI API KEY NOT FOUND")
+
+if anthropic_api_key:
+    print(f"Anthropic API Found")
+else:
+    print("Anthropic API Key not set")

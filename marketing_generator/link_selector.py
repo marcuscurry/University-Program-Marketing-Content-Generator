@@ -1,5 +1,6 @@
 import json
 from marketing_generator.scraping import Webpage
+from .llm_clients.anthropic_client import get_links_claude
 from .prompts import system_prompt_links
 from .llm_clients.openai_client import get_links_openai
 from .llm_clients.ollama_client import get_links_ollama
@@ -34,5 +35,7 @@ def api_call(url: str, api: str):
         return json.loads(result_json)
     elif (api.lower() == "c") or (api.lower() == "ollama via openai"):
         return get_links_ollama_via_openai(messages)
+    elif (api.lower() == "d") or (api.lower() == "claude"):
+        return get_links_claude(messages[0]['content'],[messages[1]])
     else:
-        raise ValueError("Unknown API choice. Use A, B, or C.")
+        raise ValueError("Unknown API choice. Use A, B, C, or D.")

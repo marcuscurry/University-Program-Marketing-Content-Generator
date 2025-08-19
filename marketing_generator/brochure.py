@@ -1,4 +1,5 @@
 from .aggregator import get_all_details
+from .llm_clients.anthropic_client import claude_brochure
 from .prompts import system_prompt_brochure  # noqa: F401 (kept for clarity)
 from .llm_clients.openai_client import openai_brochure, openai_stream_brochure
 from .llm_clients.ollama_client import ollama_brochure
@@ -16,13 +17,15 @@ def get_brochure_user_prompt(subject: str, url: str, api: str) -> str:
     return user_prompt
 
 
-def create_brochure(subject: str, url: str) -> str:
-    api = input(
-        "Which api would you like to use?\n"
-        "A: OpenAI (GPT)\n"
-        "B: Ollama (Llama 3.2)\n"
-        "C: Ollama via OpenAI (Llama 3.2)\n"
-    )
+def create_brochure(subject: str, url: str, api) -> str:
+    if api is None:
+        api = input(
+            "Which api would you like to use?\n"
+            "A: OpenAI (GPT)\n"
+            "B: Ollama (Llama 3.2)\n"
+            "C: Ollama via OpenAI (Llama 3.2)\n"
+            "D: Claude-haiku via anthropic\n"
+        )
 
     user_prompt = get_brochure_user_prompt(subject, url, api)
 
@@ -32,8 +35,10 @@ def create_brochure(subject: str, url: str) -> str:
         return ollama_brochure(user_prompt)
     elif (api.lower() == "c") or (api.lower() == "ollama via openai"):
         return ovo_brochure(user_prompt)
+    elif (api.lower() == "d") or (api.lower() == "claude"):
+        return claude_brochure(user_prompt)
     else:
-        raise ValueError("Unknown API choice. Use A, B, or C.")
+        raise ValueError("Unknown API choice. Use A, B, C, or D.")
 
 
 def stream_brochure(subject: str, url: str, api: str):
